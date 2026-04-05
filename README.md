@@ -1,83 +1,167 @@
-# FreshCart Backend - Observability Assessment
+# FreshCart Backend – Observability Assessment
 
-Express.js backend for FreshCart with required APIs, security controls, OpenTelemetry tracing, and Elastic alerting pipeline artifacts.
+This project is an Express.js-based backend for FreshCart, designed to demonstrate production-grade API design, security best practices, and observability using OpenTelemetry and Elastic Stack.
 
-## What is implemented
+---
 
-- Required endpoints:
-  - `GET /healthz`
-  - `GET /api/products?category=&page=&limit=`
-  - `GET /api/products/:id`
-  - `POST /api/cart`
-  - `GET /api/cart/:orgId`
-  - `DELETE /api/cart/:orgId/items/:productId`
-  - `POST /api/checkout`
-  - `GET /api/orders/:orderId`
-- Security baseline:
-  - Explicit CORS policy
-  - Helmet headers
-  - Validation on all POST endpoints (Zod-based middleware)
-  - Checkout rate limiting
-  - Non-leaky production error responses
-  - Environment-based configuration and secrets handling
-- OpenTelemetry:
-  - Request-scoped `request_id` generation (`crypto.randomUUID`)
-  - `org_id`, `request_id`, `http.method`, `http.route`, `http.status_code` enrichment
-  - Async checkout payment step traced under same request trace
-  - Manual spans:
-    - `input.validation`
-    - `cart.total.calculate`
-    - `payment.simulation`
-- Elastic artifacts:
-  - ILM policy JSON
-  - Index template JSON with keyword mapping for `org_id` and `request_id`
-  - Transform JSON for log/trace to metrics conversion
-  - 3 Kibana alert rule payloads + setup script
+## Overview
 
-## Quick start (under 10 minutes)
+The backend exposes core e-commerce APIs for products, cart management, and checkout, while integrating distributed tracing and monitoring pipelines for observability.
 
-### Option 1: App only
+The system is intentionally designed to simulate real-world production behavior, including partial failures and telemetry generation.
 
-1. Install dependencies:
-   - `npm install`
-2. Copy environment file:
-   - `Copy-Item .env.example .env`
-3. Start API:
-   - `npm run start`
+---
 
-### Option 2: Full stack (App + OTel Collector + Elasticsearch + Kibana)
+## Features
 
-1. Start containers:
-   - `docker compose up --build -d`
-2. Wait for Elasticsearch and Kibana to be reachable:
-   - `curl http://localhost:9200`
-   - `curl http://localhost:5601`
-3. Apply Elastic/Kibana config:
-   - `powershell -ExecutionPolicy Bypass -File scripts/setup-elastic.ps1`
-4. Send traffic to generate telemetry:
-   - `curl http://localhost:3000/healthz`
-   - `curl "http://localhost:3000/api/products?page=1&limit=3"`
-   - `curl -X POST http://localhost:3000/api/cart -H "Content-Type: application/json" -d "{\"productId\":\"p-001\",\"quantity\":2,\"orgId\":\"org-alpha\"}"`
-   - `curl -X POST http://localhost:3000/api/checkout -H "Content-Type: application/json" -d "{\"orgId\":\"org-alpha\"}"`
+### API Endpoints
 
-Kibana: `http://localhost:5601`  
-User: `elastic`  
-Password: `changeme`
+Health Check
+- GET /healthz
 
-## Elastic files in repo
+Products
+- GET /api/products?category=&page=&limit=
+- GET /api/products/:id
 
-- ILM policy: `elastic/ilm-policy.json`
-- Index template: `elastic/index-template.json`
-- Transform: `elastic/transform-checkout-metrics.json`
-- Kibana rules:
-  - `kibana/rules/high-checkout-error-rate.json`
-  - `kibana/rules/high-checkout-latency.json`
-  - `kibana/rules/low-checkout-success-rate.json`
-- Setup automation: `scripts/setup-elastic.ps1`
+Cart
+- POST /api/cart
+- GET /api/cart/:orgId
+- DELETE /api/cart/:orgId/items/:productId
+
+Checkout & Orders
+- POST /api/checkout
+- GET /api/orders/:orderId
+
+---
+
+### Security Implementation
+
+- Strict CORS policy
+- Secure HTTP headers using Helmet
+- Request validation using Zod middleware
+- Rate limiting on checkout endpoint
+- Sanitized error responses in production
+- Environment-based configuration and secret handling
+
+---
+
+### Observability (OpenTelemetry)
+
+The application includes distributed tracing with enriched metadata for better debugging and monitoring.
+
+Trace Attributes
+- request_id generated per request
+- org_id
+- http.method
+- http.route
+- http.status_code
+
+Custom Spans
+- input.validation
+- cart.total.calculate
+- payment.simulation
+
+Additional Behavior
+- Checkout flow includes asynchronous payment simulation
+- All operations are traced under a single request context
+
+---
+
+### Elastic Stack Integration
+
+The repository includes configuration files to support log ingestion, indexing, and alerting.
+
+Included Artifacts
+- ILM Policy
+- Index Template with mappings for org_id and request_id
+- Transform for converting logs/traces into metrics
+- Predefined Kibana alert rules
+
+---
+
+## Project Setup
+
+### Option 1: Run Application Only
+
+1. Install dependencies
+   npm install
+
+2. Configure environment variables
+   Copy-Item .env.example .env
+
+3. Start the server
+   npm run start
+
+---
+
+### Option 2: Full Observability Stack
+
+This option runs the application along with OpenTelemetry Collector, Elasticsearch, and Kibana.
+
+1. Start services
+   docker compose up --build -d
+
+2. Verify services are running
+   curl http://localhost:9200  
+   curl http://localhost:5601
+
+3. Apply Elastic and Kibana configuration
+   powershell -ExecutionPolicy Bypass -File scripts/setup-elastic.ps1
+
+4. Generate sample traffic
+   curl http://localhost:3000/healthz
+
+   curl "http://localhost:3000/api/products?page=1&limit=3"
+
+   curl -X POST http://localhost:3000/api/cart \
+   -H "Content-Type: application/json" \
+   -d "{\"productId\":\"p-001\",\"quantity\":2,\"orgId\":\"org-alpha\"}"
+
+   curl -X POST http://localhost:3000/api/checkout \
+   -H "Content-Type: application/json" \
+   -d "{\"orgId\":\"org-alpha\"}"
+
+---
+
+## Access Kibana
+
+URL: http://localhost:5601  
+Username: elastic  
+Password: changeme  
+
+---
+
+## Elastic Configuration Files
+
+- elastic/ilm-policy.json
+- elastic/index-template.json
+- elastic/transform-checkout-metrics.json
+
+Kibana Alert Rules
+- kibana/rules/high-checkout-error-rate.json
+- kibana/rules/high-checkout-latency.json
+- kibana/rules/low-checkout-success-rate.json
+
+Setup Script
+- scripts/setup-elastic.ps1
+
+---
 
 ## Notes
 
-- Business data is intentionally in-memory for assessment scope.
-- `POST /api/checkout` intentionally fails ~10% of requests for observable failure behavior.
-- `audit.txt` should be generated with:
-  - `npm run audit`
+- Data is stored in-memory for simplicity and assessment purposes
+- The checkout endpoint intentionally fails approximately 10 percent of requests to simulate real-world failure scenarios
+- Generate dependency audit report:
+  npm run audit
+
+---
+
+## Purpose of the Project
+
+This project demonstrates:
+
+- Backend system design using Express.js  
+- Secure API development practices  
+- Distributed tracing with OpenTelemetry  
+- Observability pipeline using Elastic Stack  
+- Realistic failure simulation for monitoring systems  
