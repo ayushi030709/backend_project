@@ -1,0 +1,55 @@
+{
+  "index_patterns": [
+    "freshcart-otel-*",
+    "freshcart-otel-traces*",
+    "freshcart-metrics-checkout-*"
+  ],
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "freshcart-observability-ilm",
+      "index.lifecycle.rollover_alias": "freshcart-otel"
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "org_id": {
+          "type": "keyword"
+        },
+        "request_id": {
+          "type": "keyword"
+        },
+        "attributes": {
+          "properties": {
+            "org_id": {
+              "type": "keyword"
+            },
+            "request_id": {
+              "type": "keyword"
+            },
+            "http.route": {
+              "type": "keyword"
+            },
+            "http.method": {
+              "type": "keyword"
+            }
+          }
+        },
+        "bucket_start": {
+          "type": "date"
+        },
+        "checkout_error_rate": {
+          "type": "double"
+        },
+        "checkout_success_rate": {
+          "type": "double"
+        },
+        "checkout_p95_latency_ms": {
+          "type": "double"
+        }
+      }
+    }
+  },
+  "priority": 500,
+  "composed_of": []
+}
+

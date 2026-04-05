@@ -1,0 +1,40 @@
+{
+  "name": "FreshCart - Checkout Error Rate High",
+  "rule_type_id": ".index-threshold",
+  "consumer": "alerts",
+  "schedule": {
+    "interval": "1m"
+  },
+  "enabled": true,
+  "tags": [
+    "freshcart",
+    "checkout",
+    "error-rate"
+  ],
+  "params": {
+    "index": [
+      "freshcart-metrics-checkout-1m"
+    ],
+    "timeField": "bucket_start",
+    "aggType": "avg",
+    "aggField": "checkout_error_rate",
+    "groupBy": "all",
+    "thresholdComparator": ">",
+    "threshold": [
+      0.08
+    ],
+    "timeWindowSize": 5,
+    "timeWindowUnit": "m"
+  },
+  "actions": [
+    {
+      "group": "threshold met",
+      "id": "__CONNECTOR_ID__",
+      "params": {
+        "level": "error",
+        "message": "Checkout error rate is {{context.value}} over the last {{context.date}}."
+      }
+    }
+  ]
+}
+

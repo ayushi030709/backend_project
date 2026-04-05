@@ -1,0 +1,61 @@
+services:
+  freshcart-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: freshcart-api
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+      OTEL_SERVICE_NAME: freshcart-api
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_TRACES_EXPORTER: otlp
+    ports:
+      - "3000:3000"
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.123.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel/otel-collector-config.yml:/etc/otelcol/config.yaml:ro
+    environment:
+      ELASTIC_USERNAME: elastic
+      ELASTIC_PASSWORD: changeme
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - elasticsearch
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: true
+      ELASTIC_PASSWORD: changeme
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: changeme
+      SERVER_PUBLICBASEURL: http://localhost:5601
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  es-data:

@@ -1,0 +1,40 @@
+{
+  "name": "FreshCart - Checkout Latency High",
+  "rule_type_id": ".index-threshold",
+  "consumer": "alerts",
+  "schedule": {
+    "interval": "1m"
+  },
+  "enabled": true,
+  "tags": [
+    "freshcart",
+    "checkout",
+    "latency"
+  ],
+  "params": {
+    "index": [
+      "freshcart-metrics-checkout-1m"
+    ],
+    "timeField": "bucket_start",
+    "aggType": "avg",
+    "aggField": "checkout_avg_latency_ms",
+    "groupBy": "all",
+    "thresholdComparator": ">",
+    "threshold": [
+      1200
+    ],
+    "timeWindowSize": 10,
+    "timeWindowUnit": "m"
+  },
+  "actions": [
+    {
+      "group": "threshold met",
+      "id": "__CONNECTOR_ID__",
+      "params": {
+        "level": "warning",
+        "message": "Checkout average latency is {{context.value}} ms across the last 10 minutes."
+      }
+    }
+  ]
+}
+

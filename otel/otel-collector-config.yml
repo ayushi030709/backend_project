@@ -1,0 +1,29 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+
+exporters:
+  debug:
+    verbosity: detailed
+  elasticsearch:
+    endpoints: ["http://elasticsearch:9200"]
+    user: "${ELASTIC_USERNAME}"
+    password: "${ELASTIC_PASSWORD}"
+    traces_index: "freshcart-otel-traces"
+    mapping:
+      mode: ecs
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch, debug]
+

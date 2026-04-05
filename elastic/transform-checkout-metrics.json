@@ -1,0 +1,88 @@
+{
+  "source": {
+    "index": [
+      "freshcart-otel-traces*"
+    ],
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "term": {
+              "attributes.http.route": "/api/checkout"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "dest": {
+    "index": "freshcart-metrics-checkout-1m"
+  },
+  "pivot": {
+    "group_by": {
+      "bucket_start": {
+        "date_histogram": {
+          "field": "@timestamp",
+          "fixed_interval": "1m"
+        }
+      },
+      "org_id": {
+        "terms": {
+          "field": "attributes.org_id"
+        }
+      }
+    },
+    "aggregations": {
+      "checkout_requests": {
+        "value_count": {
+          "field": "attributes.request_id"
+        }
+      },
+      "checkout_failures": {
+        "filter": {
+          "term": {
+            "attributes.checkout.success": false
+          }
+        }
+      },
+      "checkout_avg_latency_ms": {
+        "avg": {
+          "field": "attributes.request.duration_ms"
+        }
+      },
+      "checkout_successes": {
+        "filter": {
+          "term": {
+            "attributes.checkout.success": true
+          }
+        }
+      },
+      "checkout_error_rate": {
+        "bucket_script": {
+          "buckets_path": {
+            "failures": "checkout_failures._count",
+            "total": "checkout_requests"
+          },
+          "script": "params.total > 0 ? params.failures / params.total : 0"
+        }
+      },
+      "checkout_success_rate": {
+        "bucket_script": {
+          "buckets_path": {
+            "successes": "checkout_successes._count",
+            "total": "checkout_requests"
+          },
+          "script": "params.total > 0 ? params.successes / params.total : 0"
+        }
+      }
+    }
+  },
+  "frequency": "1m",
+  "sync": {
+    "time": {
+      "field": "@timestamp",
+      "delay": "60s"
+    }
+  },
+  "description": "Converts checkout traces into 1-minute alertable metrics."
+}
